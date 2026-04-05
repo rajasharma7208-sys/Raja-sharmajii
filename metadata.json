@@ -1,0 +1,5 @@
+{
+  "name": "rajamods7 AI",
+  "description": "A sassy, witty, and flirty voice-to-voice AI assistant powered by rajamods7 private API.",
+  "requestFramePermissions": ["microphone"]
+}
