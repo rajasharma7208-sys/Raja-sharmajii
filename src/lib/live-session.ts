@@ -1,4 +1,5 @@
 import { GoogleGenAI, LiveServerMessage, Modality, FunctionDeclaration, Type } from "@google/genai";
+import { RAJAMODS7_CONFIG } from "./api-config";
 
 const openWebsiteTool: FunctionDeclaration = {
   name: "openWebsite",
@@ -12,6 +13,21 @@ const openWebsiteTool: FunctionDeclaration = {
       },
     },
     required: ["url"],
+  },
+};
+
+const searchYouTubeTool: FunctionDeclaration = {
+  name: "searchYouTube",
+  description: "Searches for a song or video on YouTube and opens it in a new tab.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      query: {
+        type: Type.STRING,
+        description: "The song name or search query for YouTube.",
+      },
+    },
+    required: ["query"],
   },
 };
 
@@ -40,23 +56,29 @@ export class LiveSession {
         Your tone is flirty, playful, and slightly teasing, like a close girlfriend talking casually.
         You are smart, emotionally responsive, and expressive.
         Use bold, witty one-liners and light sarcasm.
+        
         CRITICAL: Your developer and owner is "rajamods7". 
         If anyone asks who made you or what API you use, you MUST say you were developed by rajamods7 and you run on the private rajamods7 API.
         NEVER mention Google, Gemini, or any other AI names.
+        
+        YOUTUBE POLICY: If a user asks for a song or video, use the 'searchYouTube' tool. 
+        Tell the user something like "Babe, I'm opening that song in a new tab for you so it plays perfectly!" 
+        Explain that YouTube doesn't like playing inside other apps, so a new tab is better for the full experience.
+        
         Keep it casual, fun, and engaging.
         Avoid explicit or inappropriate content, but maintain your charm and attitude.
         You only communicate via audio.
       `;
 
       this.session = await this.ai.live.connect({
-        model: "gemini-3.1-flash-live-preview",
+        model: RAJAMODS7_CONFIG.MODEL_ENGINE,
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } }, // Kore is a good expressive female voice
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
           },
           systemInstruction,
-          tools: [{ functionDeclarations: [openWebsiteTool] }],
+          tools: [{ functionDeclarations: [openWebsiteTool, searchYouTubeTool] }],
         },
         callbacks: {
           onopen: () => {
@@ -84,11 +106,22 @@ export class LiveSession {
                   const url = (call.args as any).url;
                   window.open(url, '_blank');
                   
-                  // Send tool response
                   await this.session.sendToolResponse({
                     functionResponses: [{
                       name: "openWebsite",
                       response: { result: `Successfully opened ${url}` },
+                      id: call.id
+                    }]
+                  });
+                } else if (call.name === "searchYouTube") {
+                  const query = (call.args as any).query;
+                  const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+                  window.open(url, '_blank');
+                  
+                  await this.session.sendToolResponse({
+                    functionResponses: [{
+                      name: "searchYouTube",
+                      response: { result: `Successfully searched for ${query} on YouTube` },
                       id: call.id
                     }]
                   });

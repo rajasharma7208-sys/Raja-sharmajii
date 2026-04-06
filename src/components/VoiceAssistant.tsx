@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Mic, MicOff, Power, Globe, AlertCircle, Sparkles } from 'lucide-react';
 import { AudioStreamer } from '../lib/audio-streamer';
 import { LiveSession } from '../lib/live-session';
+import { RAJAMODS7_CONFIG, getApiKey } from '../lib/api-config';
 
 type AssistantState = 'idle' | 'connecting' | 'listening' | 'speaking';
 
@@ -16,11 +17,11 @@ export default function VoiceAssistant() {
 
   useEffect(() => {
     audioStreamerRef.current = new AudioStreamer();
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = getApiKey();
     if (apiKey) {
       liveSessionRef.current = new LiveSession(apiKey);
     } else {
-      setError("API Key missing. Please check your environment variables.");
+      setError("rajamods7 API Key missing. Please check your secrets.");
     }
 
     return () => {
