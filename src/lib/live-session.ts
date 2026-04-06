@@ -1,5 +1,4 @@
 import { GoogleGenAI, LiveServerMessage, Modality, FunctionDeclaration, Type } from "@google/genai";
-import { RAJAMODS7_CONFIG } from "./api-config";
 
 const openWebsiteTool: FunctionDeclaration = {
   name: "openWebsite",

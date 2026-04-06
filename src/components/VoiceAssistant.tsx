@@ -1,10 +1,15 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Mic, MicOff, Power, Globe, AlertCircle, Sparkles } from 'lucide-react';
+import { Mic, Power, Globe, AlertCircle, Sparkles } from 'lucide-react';
 import { AudioStreamer } from '../lib/audio-streamer';
 import { LiveSession } from '../lib/live-session';
-import { RAJAMODS7_CONFIG } from '../lib/api-config';
-import { RAJAMODS7_PRIVATE_KEY } from '../lib/api-key';
+
+// ==========================================
+// RAJAMODS7 AI - API CONFIGURATION
+// ==========================================
+// Yahan apni API key add karein (starting with AIza...)
+const RAJAMODS7_API_KEY = process.env.GEMINI_API_KEY || "YOUR_API_KEY_HERE";
+// ==========================================
 
 type AssistantState = 'idle' | 'connecting' | 'listening' | 'speaking';
 
@@ -18,22 +23,17 @@ export default function VoiceAssistant() {
 
   useEffect(() => {
     audioStreamerRef.current = new AudioStreamer();
-    // Using the key from our new api-key.ts file
-    const apiKey = RAJAMODS7_PRIVATE_KEY;
     
-    // Check if the key is a placeholder or doesn't look like a real Gemini key
-    const isPlaceholder = !apiKey || apiKey === "YOUR_MANUAL_KEY_HERE" || apiKey === "MY_GEMINI_API_KEY";
-    const isValidFormat = apiKey && apiKey.startsWith("AIza");
-
-    if (!isPlaceholder && isValidFormat) {
-      console.log("rajamods7 AI: Valid Private Key detected, initializing...");
-      liveSessionRef.current = new LiveSession(apiKey);
+    // Check if the key is valid
+    const isPlaceholder = !RAJAMODS7_API_KEY || RAJAMODS7_API_KEY === "YOUR_API_KEY_HERE" || RAJAMODS7_API_KEY === "";
+    
+    if (!isPlaceholder) {
+      console.log("rajamods7 AI: Key detected, initializing...");
+      liveSessionRef.current = new LiveSession(RAJAMODS7_API_KEY);
+      setError(null);
     } else {
-      console.error("rajamods7 AI: Invalid or Missing API Key", { apiKey: isPlaceholder ? "PLACEHOLDER" : "INVALID_FORMAT" });
-      setError(isPlaceholder ? 
-        "rajamods7 API Key is missing. Please add your real key in src/lib/api-key.ts or Secrets panel." : 
-        "rajamods7 API Key format is invalid. It should start with 'AIza'. Please check your key."
-      );
+      console.error("rajamods7 AI: API Key missing");
+      setError("rajamods7 API Key missing! Please add it in the Secrets panel as GEMINI_API_KEY.");
     }
 
     return () => {
@@ -45,28 +45,17 @@ export default function VoiceAssistant() {
     console.log("rajamods7 AI: Starting session...");
     setError(null);
 
-    // 1. Ensure AudioStreamer is initialized
     if (!audioStreamerRef.current) {
-      console.log("rajamods7 AI: Initializing AudioStreamer...");
       audioStreamerRef.current = new AudioStreamer();
     }
 
-    // 2. Ensure LiveSession is initialized with a valid key
+    // Ensure LiveSession is initialized
     if (!liveSessionRef.current) {
-      const apiKey = RAJAMODS7_PRIVATE_KEY;
-      const isPlaceholder = !apiKey || apiKey === "YOUR_MANUAL_KEY_HERE" || apiKey === "MY_GEMINI_API_KEY";
-      const isValidFormat = apiKey && apiKey.startsWith("AIza");
-
-      if (!isPlaceholder && isValidFormat) {
-        console.log("rajamods7 AI: Initializing LiveSession...");
-        liveSessionRef.current = new LiveSession(apiKey);
+      const isPlaceholder = !RAJAMODS7_API_KEY || RAJAMODS7_API_KEY === "YOUR_API_KEY_HERE" || RAJAMODS7_API_KEY === "";
+      if (!isPlaceholder) {
+        liveSessionRef.current = new LiveSession(RAJAMODS7_API_KEY);
       } else {
-        const msg = isPlaceholder ? 
-          "rajamods7 API Key is missing. Please add your real key in src/lib/api-key.ts or Secrets panel." : 
-          "rajamods7 API Key format is invalid. It should start with 'AIza'. Please check your key.";
-        
-        setError(msg);
-        console.error("rajamods7 AI: Session initialization failed:", msg);
+        setError("rajamods7 API Key missing! Please add it in the Secrets panel.");
         return;
       }
     }
