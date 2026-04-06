@@ -49,6 +49,12 @@ export class LiveSession {
 
   async connect(callbacks: LiveSessionCallbacks) {
     try {
+      console.log("rajamods7 AI: Attempting to connect to Live API...");
+      
+      if (!this.ai) {
+        throw new Error("AI Engine not initialized. Check your API Key.");
+      }
+
       callbacks.onStateChange('connecting');
       
       const systemInstruction = `
@@ -71,7 +77,7 @@ export class LiveSession {
       `;
 
       this.session = await this.ai.live.connect({
-        model: RAJAMODS7_CONFIG.MODEL_ENGINE,
+        model: "gemini-3.1-flash-live-preview",
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
@@ -82,6 +88,7 @@ export class LiveSession {
         },
         callbacks: {
           onopen: () => {
+            console.log("rajamods7 AI: Connection established successfully!");
             this.isConnected = true;
             callbacks.onStateChange('listening');
           },
@@ -96,12 +103,14 @@ export class LiveSession {
             }
 
             if (message.serverContent?.interrupted) {
+              console.log("rajamods7 AI: Model interrupted");
               callbacks.onInterrupted();
               callbacks.onStateChange('listening');
             }
 
             if (message.toolCall) {
               for (const call of message.toolCall.functionCalls) {
+                console.log(`rajamods7 AI: Executing tool call: ${call.name}`);
                 if (call.name === "openWebsite") {
                   const url = (call.args as any).url;
                   window.open(url, '_blank');
@@ -128,24 +137,24 @@ export class LiveSession {
                 }
               }
             }
-            
-            // If the model turn is over and no audio is playing, go back to listening
-            if (message.serverContent?.turnComplete) {
-               // We'll handle state transition back to listening via a timeout or audio end event in the UI
-            }
           },
           onclose: () => {
+            console.log("rajamods7 AI: Session closed by server");
             this.isConnected = false;
             callbacks.onStateChange('idle');
           },
           onerror: (err) => {
-            callbacks.onError(err.message || "Connection error");
+            console.error("rajamods7 AI WebSocket Error:", err);
+            const errorMsg = err.message || "Network error: Connection failed";
+            callbacks.onError(errorMsg);
             callbacks.onStateChange('idle');
           }
         }
       });
     } catch (error: any) {
-      callbacks.onError(error.message || "Failed to connect");
+      console.error("rajamods7 AI Connection Exception:", error);
+      const errorMsg = error.message || "Failed to connect to rajamods7 Private API";
+      callbacks.onError(errorMsg);
       callbacks.onStateChange('idle');
     }
   }

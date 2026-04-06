@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Mic, MicOff, Power, Globe, AlertCircle, Sparkles } from 'lucide-react';
 import { AudioStreamer } from '../lib/audio-streamer';
 import { LiveSession } from '../lib/live-session';
-import { RAJAMODS7_CONFIG, getApiKey } from '../lib/api-config';
+import { RAJAMODS7_CONFIG } from '../lib/api-config';
+import { RAJAMODS7_PRIVATE_KEY } from '../lib/api-key';
 
 type AssistantState = 'idle' | 'connecting' | 'listening' | 'speaking';
 
@@ -17,11 +18,22 @@ export default function VoiceAssistant() {
 
   useEffect(() => {
     audioStreamerRef.current = new AudioStreamer();
-    const apiKey = getApiKey();
-    if (apiKey) {
+    // Using the key from our new api-key.ts file
+    const apiKey = RAJAMODS7_PRIVATE_KEY;
+    
+    // Check if the key is a placeholder or doesn't look like a real Gemini key
+    const isPlaceholder = !apiKey || apiKey === "YOUR_MANUAL_KEY_HERE" || apiKey === "MY_GEMINI_API_KEY";
+    const isValidFormat = apiKey && apiKey.startsWith("AIza");
+
+    if (!isPlaceholder && isValidFormat) {
+      console.log("rajamods7 AI: Valid Private Key detected, initializing...");
       liveSessionRef.current = new LiveSession(apiKey);
     } else {
-      setError("rajamods7 API Key missing. Please check your secrets.");
+      console.error("rajamods7 AI: Invalid or Missing API Key", { apiKey: isPlaceholder ? "PLACEHOLDER" : "INVALID_FORMAT" });
+      setError(isPlaceholder ? 
+        "rajamods7 API Key is missing. Please add your real key in src/lib/api-key.ts or Secrets panel." : 
+        "rajamods7 API Key format is invalid. It should start with 'AIza'. Please check your key."
+      );
     }
 
     return () => {
@@ -30,9 +42,35 @@ export default function VoiceAssistant() {
   }, []);
 
   const startSession = async () => {
-    if (!liveSessionRef.current || !audioStreamerRef.current) return;
-
+    console.log("rajamods7 AI: Starting session...");
     setError(null);
+
+    // 1. Ensure AudioStreamer is initialized
+    if (!audioStreamerRef.current) {
+      console.log("rajamods7 AI: Initializing AudioStreamer...");
+      audioStreamerRef.current = new AudioStreamer();
+    }
+
+    // 2. Ensure LiveSession is initialized with a valid key
+    if (!liveSessionRef.current) {
+      const apiKey = RAJAMODS7_PRIVATE_KEY;
+      const isPlaceholder = !apiKey || apiKey === "YOUR_MANUAL_KEY_HERE" || apiKey === "MY_GEMINI_API_KEY";
+      const isValidFormat = apiKey && apiKey.startsWith("AIza");
+
+      if (!isPlaceholder && isValidFormat) {
+        console.log("rajamods7 AI: Initializing LiveSession...");
+        liveSessionRef.current = new LiveSession(apiKey);
+      } else {
+        const msg = isPlaceholder ? 
+          "rajamods7 API Key is missing. Please add your real key in src/lib/api-key.ts or Secrets panel." : 
+          "rajamods7 API Key format is invalid. It should start with 'AIza'. Please check your key.";
+        
+        setError(msg);
+        console.error("rajamods7 AI: Session initialization failed:", msg);
+        return;
+      }
+    }
+
     try {
       await liveSessionRef.current.connect({
         onAudioChunk: (base64) => {

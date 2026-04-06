@@ -3,6 +3,8 @@
  * Developed & Owned by rajamods7
  */
 
+import { RAJAMODS7_PRIVATE_KEY } from "./api-key";
+
 export const RAJAMODS7_CONFIG = {
   API_NAME: "rajamods7 Private API",
   VERSION: "v1.0-Live",
@@ -15,5 +17,5 @@ export const RAJAMODS7_CONFIG = {
 };
 
 export const getApiKey = () => {
-  return process.env.RAJAMODS7_API_KEY || process.env.GEMINI_API_KEY;
+  return RAJAMODS7_PRIVATE_KEY;
 };
